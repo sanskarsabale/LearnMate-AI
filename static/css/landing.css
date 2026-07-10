@@ -1,0 +1,114 @@
+/* ============================================================
+   LearnMate AI — Landing Page CSS
+   ============================================================ */
+
+.landing-body { background: #060d1e; color: #e6edf3; }
+
+/* ── Navbar ─────────────────────────────────────────────────── */
+.landing-nav {
+  background: rgba(6,13,30,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.hero-section {
+  min-height:      100vh;
+  display:         flex;
+  align-items:     center;
+  padding:         120px 0 80px;
+  position:        relative;
+  overflow:        hidden;
+}
+
+.hero-bg-pattern {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(59,130,212,0.2) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 60% at 80% 30%, rgba(99,102,241,0.2) 0%, transparent 70%);
+}
+
+.hero-badge {
+  display:       inline-block;
+  padding:       6px 18px;
+  border-radius: 20px;
+  background:    rgba(59,130,212,0.15);
+  border:        1px solid rgba(59,130,212,0.3);
+  color:         #58a6ff;
+  font-size:     13px;
+  font-weight:   600;
+}
+
+.hero-title {
+  font-size:   3.5rem;
+  font-weight: 900;
+  line-height: 1.15;
+  color:       #ffffff;
+}
+@media (max-width: 768px) { .hero-title { font-size: 2.2rem; } }
+
+.text-gradient {
+  background: linear-gradient(135deg, #58a6ff, #7c5cd8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  font-size:  1.1rem;
+  color:      rgba(230,237,243,0.75);
+  max-width:  580px;
+  margin-top: 1.2rem;
+}
+
+.hero-stat        { text-align: center; }
+.stat-number      { font-size: 2.2rem; font-weight: 900; color: #58a6ff; }
+.stat-label       { font-size: 12px; color: rgba(230,237,243,0.6); margin-top: -4px; }
+
+/* ── Sections ────────────────────────────────────────────────── */
+.section-pad { padding: 80px 0; }
+
+.bg-surface { background: rgba(255,255,255,0.03); }
+
+.section-header { margin-bottom: 3rem; }
+.section-title  { font-size: 2rem; font-weight: 800; color: #e6edf3; }
+
+/* ── Agent Cards ─────────────────────────────────────────────── */
+.agent-card {
+  background:    rgba(255,255,255,0.04);
+  border:        1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  transition:    transform 0.2s, border-color 0.2s;
+}
+.agent-card:hover { transform: translateY(-4px); border-color: rgba(88,166,255,0.3); }
+.agent-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.agent-card h6  { color: #e6edf3; }
+.agent-card p   { color: rgba(230,237,243,0.65); }
+
+/* ── Tech Stack ──────────────────────────────────────────────── */
+.tech-stack-grid {
+  display:  flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
+}
+.tech-badge {
+  display:       flex; align-items: center; gap: 12px;
+  padding:       14px 20px; border-radius: 12px;
+  background:    rgba(255,255,255,0.04);
+  border:        1px solid rgba(255,255,255,0.08);
+  font-size:     14px; color: #e6edf3;
+  min-width:     180px;
+}
+.tech-badge i { font-size: 1.5rem; color: #58a6ff; }
+
+/* ── CTA ─────────────────────────────────────────────────────── */
+.cta-section {
+  padding:    80px 0;
+  background: linear-gradient(135deg, #0f172a, #1e1b4b);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.lm-footer {
+  background:  rgba(0,0,0,0.3);
+  border-top:  1px solid rgba(255,255,255,0.06);
+}

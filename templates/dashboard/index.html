@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <!-- Greeting -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+      <h4 class="fw-bold mb-1">👋 Hello, {{ current_user.name.split()[0] }}!</h4>
+      <p class="text-muted mb-0">{{ current_user.preferred_domain or 'Your learning journey' }} — Keep the momentum going! 🚀</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('dashboard.chat') }}" class="btn btn-primary"><i class="bi bi-chat-dots me-2"></i>Ask AI Mentor</a>
+      <a href="{{ url_for('dashboard.skill_assessment') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check me-2"></i>Assessment</a>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="row g-4 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card glass-card p-4">
+        <div class="stat-icon" style="background:#6366f120;color:#6366f1"><i class="bi bi-trophy-fill fs-4"></i></div>
+        <div class="stat-value mt-3">{{ completion_pct }}%</div>
+        <div class="stat-label text-muted">Roadmap Complete</div>
+        <div class="progress mt-2" style="height:4px">
+          <div class="progress-bar" style="width:{{ completion_pct }}%;background:#6366f1"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card glass-card p-4">
+        <div class="stat-icon" style="background:#f59e0b20;color:#f59e0b"><i class="bi bi-fire fs-4"></i></div>
+        <div class="stat-value mt-3">{{ streak }}</div>
+        <div class="stat-label text-muted">Day Streak 🔥</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card glass-card p-4">
+        <div class="stat-icon" style="background:#10b98120;color:#10b981"><i class="bi bi-clock-history fs-4"></i></div>
+        <div class="stat-value mt-3">{{ total_hours }}h</div>
+        <div class="stat-label text-muted">Total Hours</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card glass-card p-4">
+        <div class="stat-icon" style="background:#0ea5e920;color:#0ea5e9"><i class="bi bi-calendar-week fs-4"></i></div>
+        <div class="stat-value mt-3">{{ completed_weeks }}/{{ total_weeks }}</div>
+        <div class="stat-label text-muted">Weeks Done</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Weekly Progress Chart -->
+    <div class="col-lg-7">
+      <div class="glass-card p-4 h-100">
+        <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-line me-2 text-accent"></i>Weekly Learning Progress</h6>
+        <canvas id="progressChart" height="160"></canvas>
+      </div>
+    </div>
+
+    <!-- Today's Tasks -->
+    <div class="col-lg-5">
+      <div class="glass-card p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-check2-circle me-2 text-accent"></i>Today's Tasks</h6>
+          <button class="btn btn-sm btn-outline-primary" onclick="getDailyPlan()">
+            <i class="bi bi-magic"></i> Generate Plan
+          </button>
+        </div>
+        <div id="todayTasksList">
+          {% if today_tasks %}
+            {% for task in today_tasks %}
+            <div class="task-item d-flex gap-3 align-items-start mb-3">
+              <div class="task-dot priority-{{ task.priority }}"></div>
+              <div class="flex-grow-1">
+                <div class="fw-semibold small">{{ task.task_title }}</div>
+                <div class="text-muted x-small">{{ task.estimated_minutes }} min • {{ task.task_type }}</div>
+              </div>
+              <span class="badge {% if task.is_completed %}bg-success{% else %}bg-outline{% endif %}">
+                {% if task.is_completed %}✓{% else %}Pending{% endif %}
+              </span>
+            </div>
+            {% endfor %}
+          {% else %}
+          <div class="text-center py-3 text-muted">
+            <i class="bi bi-clipboard-x fs-2 d-block mb-2"></i>
+            <small>No tasks today. Generate your daily plan!</small>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Active Roadmap Snippet -->
+    <div class="col-lg-6">
+      <div class="glass-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-map me-2 text-accent"></i>Learning Roadmap</h6>
+          <a href="{{ url_for('dashboard.roadmap') }}" class="btn btn-sm btn-outline-primary">View Full</a>
+        </div>
+        {% if roadmap %}
+        <div class="roadmap-mini">
+          <div class="d-flex gap-3 align-items-center mb-3">
+            <div class="level-badge level-{{ roadmap.level|lower }}">{{ roadmap.level }}</div>
+            <div>
+              <div class="fw-semibold">{{ roadmap.domain }}</div>
+              <div class="text-muted small">{{ roadmap.duration_weeks }} week programme</div>
+            </div>
+          </div>
+          <div class="progress" style="height:8px">
+            <div class="progress-bar bg-gradient-primary" style="width:{{ completion_pct }}%"></div>
+          </div>
+          <div class="d-flex justify-content-between mt-1">
+            <small class="text-muted">{{ completed_weeks }} weeks done</small>
+            <small class="text-accent fw-semibold">{{ completion_pct }}%</small>
+          </div>
+        </div>
+        {% else %}
+        <div class="text-center py-3">
+          <i class="bi bi-map fs-2 text-muted d-block mb-2"></i>
+          <p class="text-muted small mb-3">No roadmap yet. Complete your assessment first.</p>
+          <a href="{{ url_for('dashboard.skill_assessment') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-magic me-1"></i>Generate Roadmap
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Recent Projects -->
+    <div class="col-lg-6">
+      <div class="glass-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-code-slash me-2 text-accent"></i>Recommended Projects</h6>
+          <a href="{{ url_for('dashboard.projects') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        {% if recent_projects %}
+          {% for project in recent_projects %}
+          <div class="project-mini-card mb-3 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="fw-semibold small">{{ project.title[:45] }}{% if project.title|length > 45 %}...{% endif %}</div>
+                <div class="text-muted x-small mt-1">{{ project.tech_stack[:60] }}</div>
+              </div>
+              <span class="badge bg-{{ 'success' if project.difficulty == 'Beginner' else 'warning' if project.difficulty == 'Intermediate' else 'danger' }} ms-2">
+                {{ project.difficulty }}
+              </span>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="text-center py-3">
+          <i class="bi bi-code-slash fs-2 text-muted d-block mb-2"></i>
+          <p class="text-muted small mb-3">Get personalised project recommendations</p>
+          <button class="btn btn-primary btn-sm" onclick="getProjects()">
+            <i class="bi bi-magic me-1"></i>Get Projects
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- AI Assessment Status -->
+    {% if assessment %}
+    <div class="col-12">
+      <div class="glass-card p-4 lm-ai-banner">
+        <div class="row align-items-center">
+          <div class="col-md-1 text-center mb-3 mb-md-0">
+            <div class="ai-big-icon"><i class="bi bi-robot fs-1"></i></div>
+          </div>
+          <div class="col-md-7 mb-3 mb-md-0">
+            <h6 class="fw-bold mb-1">Latest Skill Assessment — {{ assessment.domain }}</h6>
+            <p class="text-muted small mb-0">{{ assessment.ai_feedback[:200] if assessment.ai_feedback else 'Assessment complete.' }}...</p>
+          </div>
+          <div class="col-md-4 d-flex flex-column align-items-md-end gap-2">
+            <div class="score-display">
+              <span class="score-number">{{ assessment.score|int }}%</span>
+              <span class="level-badge level-{{ assessment.level|lower }} ms-2">{{ assessment.level }}</span>
+            </div>
+            <a href="{{ url_for('dashboard.skill_assessment') }}" class="btn btn-sm btn-outline-primary">Retake Assessment</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Daily Plan Modal -->
+<div class="modal fade" id="dailyPlanModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content glass-card">
+      <div class="modal-header border-0">
+        <h5 class="modal-title"><i class="bi bi-calendar-check me-2 text-accent"></i>Your Daily Study Plan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="dailyPlanContent">
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-2 text-muted">LearnMate AI is crafting your personalised plan...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+const chartData = {{ chart_data | safe }};
+
+// Progress Chart
+const ctx = document.getElementById('progressChart');
+if (ctx && chartData.labels && chartData.labels.length) {
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: chartData.labels,
+      datasets: [
+        {
+          label: 'Study Hours',
+          data: chartData.hours,
+          backgroundColor: 'rgba(99,102,241,0.7)',
+          borderRadius: 6,
+        },
+        {
+          label: '% Complete',
+          data: chartData.pct,
+          type: 'line',
+          borderColor: '#10b981',
+          backgroundColor: 'transparent',
+          tension: 0.4,
+          yAxisID: 'y1',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y:  { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y1: { beginAtZero: true, position: 'right', max: 100, grid: { display: false } }
+      },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+} else if (ctx) {
+  ctx.closest('.glass-card').querySelector('canvas').insertAdjacentHTML('beforebegin',
+    '<p class="text-muted text-center py-3">Log your first week to see progress charts! 📊</p>');
+}
+
+function getDailyPlan() {
+  const modal = new bootstrap.Modal(document.getElementById('dailyPlanModal'));
+  modal.show();
+  fetch('/api/agents/mentor/daily-plan', { method: 'POST', headers: {'Content-Type':'application/json'} })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('dailyPlanContent').innerHTML = data.success
+        ? `<div class="ai-response">${formatAIResponse(data.plan)}</div>`
+        : `<div class="alert alert-danger">${data.error}</div>`;
+    });
+}
+
+function getProjects() {
+  fetch('/api/agents/projects/recommend', { method: 'POST', headers: {'Content-Type':'application/json'} })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) { window.location.href = '{{ url_for("dashboard.projects") }}'; }
+    });
+}
+</script>
+{% endblock %}

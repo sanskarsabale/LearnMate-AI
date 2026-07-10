@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Skill Assessment{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="page-header mb-4">
+    <h4 class="fw-bold mb-1"><i class="bi bi-clipboard-check me-2 text-accent"></i>Skill Assessment</h4>
+    <p class="text-muted">Let AI evaluate your current knowledge and identify skill gaps</p>
+  </div>
+
+  <!-- Past Assessments -->
+  {% if past_assessments %}
+  <div class="row g-4 mb-4">
+    {% for a in past_assessments %}
+    <div class="col-md-4">
+      <div class="glass-card p-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <div class="fw-bold">{{ a.domain }}</div>
+            <div class="text-muted small">{{ a.created_at.strftime('%d %b %Y') if a.created_at else '' }}</div>
+          </div>
+          <span class="level-badge level-{{ a.level|lower }}">{{ a.level }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="circular-progress" data-value="{{ a.score|int }}">
+            <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#6366f1" stroke-width="8"
+              stroke-dasharray="{{ (a.score / 100 * 201)|int }} 201"
+              stroke-linecap="round" transform="rotate(-90 40 40)"/>
+            </svg>
+            <span>{{ a.score|int }}%</span>
+          </div>
+          <div class="text-muted small">{{ a.ai_feedback[:120] if a.ai_feedback else 'Assessment completed.' }}...</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Start Assessment -->
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="glass-card p-4">
+        <h5 class="fw-bold mb-3">Start New Assessment</h5>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Domain to Assess</label>
+          <select id="assessDomain" class="form-select">
+            {% for domain in [
+              'Artificial Intelligence & Machine Learning',
+              'Data Science & Analytics',
+              'Full Stack Web Development',
+              'Cloud Computing & DevOps',
+              'Cybersecurity',
+              'Python Programming',
+              'JavaScript & Frontend',
+              'Database & SQL',
+              'Mobile App Development',
+            ] %}
+            <option {% if current_user.preferred_domain and domain == current_user.preferred_domain %}selected{% endif %}>
+              {{ domain }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Number of Questions</label>
+          <div class="d-flex gap-2">
+            {% for n in [5, 10, 15] %}
+            <button class="btn {% if n == 10 %}btn-primary{% else %}btn-outline-secondary{% endif %} q-count-btn flex-grow-1"
+              data-count="{{ n }}" onclick="selectCount(this)">{{ n }} Questions</button>
+            {% endfor %}
+          </div>
+        </div>
+        <button class="btn btn-primary w-100" onclick="startAssessment()">
+          <i class="bi bi-play-fill me-2"></i>Start Assessment
+        </button>
+      </div>
+    </div>
+
+    <!-- Assessment Area -->
+    <div class="col-lg-7">
+      <div id="assessmentArea" class="glass-card p-4" style="display:none">
+        <div id="assessmentLoading" class="text-center py-5">
+          <div class="spinner-border text-primary mb-3"></div>
+          <p class="text-muted">IBM watsonx.ai Granite is generating your personalised assessment...</p>
+        </div>
+        <div id="assessmentQuestions" style="display:none">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold mb-0" id="assessmentTitle">Assessment</h5>
+            <span class="badge bg-primary" id="questionCounter">1/10</span>
+          </div>
+          <div id="progressBar" class="progress mb-4" style="height:6px">
+            <div class="progress-bar" id="qProgress" style="width:0%"></div>
+          </div>
+          <div id="questionCard" class="question-card p-4 rounded-3 mb-3"></div>
+          <div class="d-flex gap-2 mt-4">
+            <button class="btn btn-outline-secondary" id="prevBtn" onclick="prevQuestion()" disabled>
+              <i class="bi bi-chevron-left"></i> Prev
+            </button>
+            <button class="btn btn-primary ms-auto" id="nextBtn" onclick="nextQuestion()">
+              Next <i class="bi bi-chevron-right"></i>
+            </button>
+            <button class="btn btn-success" id="submitBtn" onclick="submitAssessment()" style="display:none">
+              <i class="bi bi-check-lg me-1"></i> Submit Assessment
+            </button>
+          </div>
+        </div>
+        <div id="assessmentResult" style="display:none"></div>
+      </div>
+
+      <!-- Placeholder when no assessment running -->
+      <div id="assessmentPlaceholder" class="glass-card p-4 text-center py-5">
+        <i class="bi bi-clipboard-check fs-1 text-muted d-block mb-3"></i>
+        <h5 class="fw-bold">Ready to assess your skills?</h5>
+        <p class="text-muted">Select your domain and start the AI-powered assessment.<br>It takes just 5-10 minutes!</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let questions = [], currentQ = 0, answers = {}, selectedCount = 10, assessDomain = '';
+
+function selectCount(btn) {
+  document.querySelectorAll('.q-count-btn').forEach(b => b.classList.remove('btn-primary'));
+  btn.classList.add('btn-primary');
+  btn.classList.remove('btn-outline-secondary');
+  selectedCount = parseInt(btn.dataset.count);
+}
+
+async function startAssessment() {
+  assessDomain = document.getElementById('assessDomain').value;
+  document.getElementById('assessmentPlaceholder').style.display = 'none';
+  document.getElementById('assessmentArea').style.display = 'block';
+  document.getElementById('assessmentLoading').style.display = 'block';
+  document.getElementById('assessmentQuestions').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/agents/assessment/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain: assessDomain, count: selectedCount })
+    });
+    const data = await res.json();
+    if (data.success && data.questions.length) {
+      questions = data.questions;
+      currentQ = 0;
+      answers = {};
+      document.getElementById('assessmentLoading').style.display = 'none';
+      document.getElementById('assessmentQuestions').style.display = 'block';
+      document.getElementById('assessmentTitle').textContent = assessDomain + ' Assessment';
+      renderQuestion();
+    }
+  } catch(e) {
+    document.getElementById('assessmentLoading').innerHTML =
+      '<div class="alert alert-danger">Failed to load questions. Please try again.</div>';
+  }
+}
+
+function renderQuestion() {
+  const q = questions[currentQ];
+  document.getElementById('questionCounter').textContent = `${currentQ+1}/${questions.length}`;
+  document.getElementById('qProgress').style.width = `${((currentQ+1)/questions.length)*100}%`;
+  document.getElementById('prevBtn').disabled = currentQ === 0;
+  document.getElementById('nextBtn').style.display = currentQ < questions.length-1 ? 'inline-block' : 'none';
+  document.getElementById('submitBtn').style.display = currentQ === questions.length-1 ? 'inline-block' : 'none';
+
+  let optionsHtml = Object.entries(q.options).map(([key, val]) => `
+    <div class="option-card ${answers[currentQ] === key ? 'selected' : ''}"
+         onclick="selectAnswer('${key}', this)">
+      <span class="option-key">${key}</span>
+      <span>${val}</span>
+    </div>`).join('');
+
+  document.getElementById('questionCard').innerHTML = `
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <span class="badge bg-${q.difficulty === 'easy' ? 'success' : q.difficulty === 'medium' ? 'warning' : 'danger'}">
+        ${q.difficulty || 'medium'}
+      </span>
+    </div>
+    <h6 class="fw-bold mb-4">Q${currentQ+1}. ${q.question}</h6>
+    <div class="options-grid">${optionsHtml}</div>
+  `;
+}
+
+function selectAnswer(key, el) {
+  answers[currentQ] = key;
+  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function nextQuestion() { if (currentQ < questions.length - 1) { currentQ++; renderQuestion(); } }
+function prevQuestion() { if (currentQ > 0) { currentQ--; renderQuestion(); } }
+
+async function submitAssessment() {
+  document.getElementById('assessmentQuestions').style.display = 'none';
+  document.getElementById('assessmentLoading').style.display = 'block';
+  document.getElementById('assessmentLoading').innerHTML =
+    '<div class="spinner-border text-primary mb-3"></div><p class="text-muted">Evaluating your assessment with IBM AI...</p>';
+
+  const res = await fetch('/api/agents/assessment/evaluate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ domain: assessDomain, questions, answers })
+  });
+  const data = await res.json();
+  document.getElementById('assessmentLoading').style.display = 'none';
+
+  if (data.success) {
+    const r = data.result;
+    const levelColor = { Beginner: 'success', Intermediate: 'warning', Advanced: 'danger' };
+    document.getElementById('assessmentResult').style.display = 'block';
+    document.getElementById('assessmentResult').innerHTML = `
+      <div class="text-center mb-4">
+        <div class="result-score-circle mx-auto mb-3" style="--score:${r.percentage}">
+          <span>${r.percentage}%</span>
+        </div>
+        <h4 class="fw-bold">Assessment Complete!</h4>
+        <span class="badge bg-${levelColor[r.level]||'primary'} fs-6 px-3 py-2">${r.level}</span>
+      </div>
+      <div class="ai-response p-3 rounded-3 mb-3">${formatAIResponse(r.feedback)}</div>
+      <div class="d-flex gap-3 mt-4">
+        <a href="/roadmap" class="btn btn-primary flex-grow-1">
+          <i class="bi bi-map me-2"></i>Generate My Roadmap
+        </a>
+        <button class="btn btn-outline-secondary flex-grow-1" onclick="location.reload()">
+          Retake Assessment
+        </button>
+      </div>`;
+  }
+}
+</script>
+{% endblock %}

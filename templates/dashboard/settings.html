@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="page-header mb-4">
+    <h4 class="fw-bold mb-1"><i class="bi bi-gear me-2 text-accent"></i>Settings</h4>
+  </div>
+  <div class="row g-4">
+    <!-- Appearance -->
+    <div class="col-md-6">
+      <div class="glass-card p-4">
+        <h6 class="fw-bold mb-4"><i class="bi bi-palette me-2 text-accent"></i>Appearance</h6>
+        <label class="fw-semibold d-block mb-2">Theme</label>
+        <div class="d-flex gap-3">
+          <button class="theme-option-btn" id="themeLight" onclick="setTheme('light')">
+            <i class="bi bi-sun fs-3 d-block mb-1"></i> Light
+          </button>
+          <button class="theme-option-btn" id="themeDark" onclick="setTheme('dark')">
+            <i class="bi bi-moon-stars fs-3 d-block mb-1"></i> Dark
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Change Password -->
+    <div class="col-md-6">
+      <div class="glass-card p-4">
+        <h6 class="fw-bold mb-4"><i class="bi bi-lock me-2 text-accent"></i>Change Password</h6>
+        <form method="POST">
+          <input type="hidden" name="action" value="change_password">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Current Password</label>
+            <input type="password" name="current_password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">New Password</label>
+            <input type="password" name="new_password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Confirm New Password</label>
+            <input type="password" name="confirm_password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Password</button>
+        </form>
+      </div>
+    </div>
+    <!-- Account Info -->
+    <div class="col-md-6">
+      <div class="glass-card p-4">
+        <h6 class="fw-bold mb-4"><i class="bi bi-person me-2 text-accent"></i>Account</h6>
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Name</span><span class="fw-semibold">{{ current_user.name }}</span></div>
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Email</span><span>{{ current_user.email }}</span></div>
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Member since</span><span>{{ current_user.created_at.strftime('%d %b %Y') if current_user.created_at else '—' }}</span></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Last login</span><span>{{ current_user.last_login.strftime('%d %b %Y') if current_user.last_login else '—' }}</span></div>
+      </div>
+    </div>
+    <!-- AI Settings -->
+    <div class="col-md-6">
+      <div class="glass-card p-4">
+        <h6 class="fw-bold mb-4"><i class="bi bi-robot me-2 text-accent"></i>AI Mentor Settings</h6>
+        <p class="text-muted small">AI behaviour is configured via <code>config/agent_instructions.py</code></p>
+        <div class="lm-info-box p-3 rounded-3">
+          <small><i class="bi bi-info-circle text-accent"></i> To customise AI personality, teaching style, safety rules, and more — edit the <strong>AGENT_INSTRUCTIONS</strong> dictionary in the config file.</small>
+        </div>
+        <a href="{{ url_for('dashboard.chat') }}" class="btn btn-outline-primary btn-sm mt-3">
+          <i class="bi bi-chat-dots me-1"></i>Open AI Mentor Chat
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  fetch('/settings', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'},
+    body: `action=theme&theme=${theme}` });
+}
+// Highlight current theme
+const t = localStorage.getItem('theme') || 'light';
+document.getElementById('theme' + t.charAt(0).toUpperCase() + t.slice(1))?.classList.add('active');
+</script>
+{% endblock %}

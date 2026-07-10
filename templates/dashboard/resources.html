@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Learning Resources{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h4 class="fw-bold mb-1"><i class="bi bi-collection me-2 text-accent"></i>Learning Resources</h4>
+      <p class="text-muted mb-0">Curated resources from IBM SkillsBuild, Coursera, YouTube & more</p>
+    </div>
+    <button class="btn btn-primary" onclick="getAIResources()">
+      <i class="bi bi-magic me-2"></i>AI Recommendations
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <form method="GET" action="{{ url_for('dashboard.resources') }}" class="glass-card p-3 mb-4">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Domain</label>
+        <input type="text" name="domain" class="form-control form-control-sm" value="{{ domain }}" placeholder="Filter by domain...">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small">Level</label>
+        <select name="level" class="form-select form-select-sm">
+          <option value="">All Levels</option>
+          {% for l in ['Beginner', 'Intermediate', 'Advanced'] %}
+          <option {% if level == l %}selected{% endif %}>{{ l }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small">Platform</label>
+        <select name="platform" class="form-select form-select-sm">
+          <option value="">All Platforms</option>
+          {% for p in platforms %}
+          <option {% if platform == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Resource Grid -->
+  {% if resources %}
+  <div class="row g-4" id="resourceGrid">
+    {% for r in resources %}
+    <div class="col-md-6 col-lg-4">
+      <div class="resource-card glass-card h-100 p-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <span class="platform-badge platform-{{ r.platform | lower | replace(' ', '-') | replace('&','') }}">
+            {{ r.platform }}
+          </span>
+          <div class="d-flex gap-1 align-items-center">
+            {% if r.is_free %}<span class="badge bg-success">Free</span>{% endif %}
+            <span class="badge bg-{{ 'success' if r.level == 'Beginner' else 'warning' if r.level == 'Intermediate' else 'danger' }}">{{ r.level }}</span>
+          </div>
+        </div>
+        <h6 class="fw-bold mb-2">{{ r.title }}</h6>
+        <p class="text-muted small mb-3">{{ r.description[:100] if r.description else '' }}{% if r.description and r.description|length > 100 %}...{% endif %}</p>
+        {% if r.rating %}
+        <div class="d-flex align-items-center gap-1 mb-3">
+          {% for i in range(5) %}
+          <i class="bi bi-star{% if i < r.rating|int %}-fill text-warning{% else %} text-muted{% endif %} small"></i>
+          {% endfor %}
+          <span class="text-muted small">{{ r.rating }}</span>
+        </div>
+        {% endif %}
+        {% if r.url %}
+        <a href="{{ r.url }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm w-100">
+          <i class="bi bi-box-arrow-up-right me-1"></i>Open Resource
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="glass-card p-5 text-center">
+    <i class="bi bi-collection fs-1 text-muted d-block mb-3"></i>
+    <h5>No resources found</h5>
+    <p class="text-muted mb-3">Try adjusting your filters or get AI recommendations.</p>
+    <button class="btn btn-primary" onclick="getAIResources()">
+      <i class="bi bi-magic me-2"></i>Get AI Recommendations
+    </button>
+  </div>
+  {% endif %}
+
+  <!-- AI Recommendations -->
+  <div id="aiResourcesSection" class="mt-4" style="display:none">
+    <h6 class="fw-bold mb-3"><i class="bi bi-magic me-2 text-accent"></i>AI-Recommended Resources</h6>
+    <div class="row g-4" id="aiResourceGrid"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function getAIResources() {
+  const btn = event.target;
+  btn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>Loading...';
+  btn.disabled = true;
+
+  const res = await fetch('/api/agents/resources/recommend', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  });
+  const data = await res.json();
+  btn.innerHTML = '<i class="bi bi-magic me-2"></i>AI Recommendations';
+  btn.disabled = false;
+
+  if (data.success && data.resources.length) {
+    document.getElementById('aiResourcesSection').style.display = 'block';
+    document.getElementById('aiResourceGrid').innerHTML = data.resources.map(r => `
+      <div class="col-md-6 col-lg-4">
+        <div class="resource-card glass-card h-100 p-4">
+          <div class="d-flex justify-content-between mb-3">
+            <span class="badge bg-primary">${r.platform || 'AI Pick'}</span>
+            ${r.free ? '<span class="badge bg-success">Free</span>' : ''}
+          </div>
+          <h6 class="fw-bold mb-2">${r.title}</h6>
+          <p class="text-muted small mb-3">${(r.description || '').substring(0, 100)}...</p>
+          ${r.url ? `<a href="${r.url}" target="_blank" class="btn btn-outline-primary btn-sm w-100">Open Resource</a>` : ''}
+        </div>
+      </div>`).join('');
+    document.getElementById('aiResourcesSection').scrollIntoView({ behavior: 'smooth' });
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h4 class="fw-bold mb-1"><i class="bi bi-shield-check me-2 text-accent"></i>Admin Dashboard</h4>
+      <p class="text-muted mb-0">Monitor students, resources, and system health</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('admin.export_students') }}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-download me-1"></i>Export CSV
+      </a>
+      <a href="{{ url_for('admin.add_resource') }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Add Resource
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-4 mb-4">
+    {% for label, value, icon, color in [
+      ('Total Students', total_students, 'people-fill', '#6366f1'),
+      ('Active Students', active_students, 'person-check-fill', '#10b981'),
+      ('Assessments Done', assessments, 'clipboard-check-fill', '#f59e0b'),
+      ('Roadmaps Created', roadmaps, 'map-fill', '#0ea5e9'),
+      ('Total Resources', total_resources, 'collection-fill', '#8b5cf6'),
+    ] %}
+    <div class="col-6 col-md-2-4">
+      <div class="stat-card glass-card p-4">
+        <div class="stat-icon" style="background:{{ color }}20;color:{{ color }}">
+          <i class="bi bi-{{ icon }} fs-4"></i>
+        </div>
+        <div class="stat-value mt-3 fs-2 fw-bold">{{ value }}</div>
+        <div class="stat-label text-muted">{{ label }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Level Distribution -->
+    <div class="col-md-6">
+      <div class="glass-card p-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart me-2 text-accent"></i>Student Level Distribution</h6>
+        <canvas id="levelChart" height="200"></canvas>
+      </div>
+    </div>
+    <!-- Domain Distribution -->
+    <div class="col-md-6">
+      <div class="glass-card p-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart me-2 text-accent"></i>Domain Distribution</h6>
+        <canvas id="domainChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Students -->
+  <div class="glass-card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="fw-bold mb-0"><i class="bi bi-people me-2 text-accent"></i>Recent Students</h6>
+      <a href="{{ url_for('admin.students') }}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover lm-table">
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Domain</th><th>Career Goal</th><th>Joined</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for student in recent_students %}
+          <tr>
+            <td><div class="d-flex align-items-center gap-2">
+              <div class="student-mini-avatar">{{ student.name[0].upper() }}</div>
+              <span class="fw-semibold">{{ student.name }}</span>
+            </div></td>
+            <td class="text-muted small">{{ student.email }}</td>
+            <td><span class="badge bg-primary-soft text-primary">{{ (student.preferred_domain or '—')[:25] }}</span></td>
+            <td class="small">{{ student.career_goal or '—' }}</td>
+            <td class="text-muted small">{{ student.created_at.strftime('%d %b') if student.created_at else '—' }}</td>
+            <td>
+              <span class="badge bg-{{ 'success' if student.is_active else 'secondary' }}">
+                {{ 'Active' if student.is_active else 'Inactive' }}
+              </span>
+            </td>
+            <td>
+              <a href="{{ url_for('admin.student_detail', student_id=student.id) }}" class="btn btn-xs btn-outline-primary">View</a>
+              <button class="btn btn-xs btn-outline-{{ 'danger' if student.is_active else 'success' }}"
+                onclick="toggleStudent({{ student.id }}, this)">
+                {{ 'Deactivate' if student.is_active else 'Activate' }}
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+const levelData = {{ level_data | tojson }};
+const domainData = {{ domain_data | tojson }};
+
+if (Object.keys(levelData).length) {
+  new Chart(document.getElementById('levelChart'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(levelData),
+      datasets: [{ data: Object.values(levelData), backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderRadius: 6 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+}
+
+if (Object.keys(domainData).length) {
+  new Chart(document.getElementById('domainChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(domainData).map(d => d.substring(0, 20)),
+      datasets: [{ data: Object.values(domainData), backgroundColor: ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#a3e635'] }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+  });
+}
+
+async function toggleStudent(id, btn) {
+  const res = await fetch(`/admin/students/${id}/toggle`, { method: 'POST' });
+  const data = await res.json();
+  if (data.success) window.location.reload();
+}
+</script>
+{% endblock %}

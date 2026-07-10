@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Complete Your Profile{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="glass-card p-5">
+        <div class="text-center mb-4">
+          <div class="setup-icon"><i class="bi bi-person-badge fs-1 text-accent"></i></div>
+          <h3 class="fw-bold mt-3">Let's set up your learning profile</h3>
+          <p class="text-muted">This helps our AI agents personalise your experience perfectly.</p>
+        </div>
+        <!-- Step Indicator -->
+        <div class="step-indicator mb-5">
+          <div class="step active">1. Profile</div>
+          <div class="step-line"></div>
+          <div class="step">2. Assessment</div>
+          <div class="step-line"></div>
+          <div class="step">3. Roadmap</div>
+        </div>
+        <form method="POST" action="{{ url_for('dashboard.complete_profile') }}">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Branch / Department <span class="text-danger">*</span></label>
+              <input type="text" name="branch" class="form-control" placeholder="e.g. Computer Science Engineering" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Semester</label>
+              <select name="semester" class="form-select">
+                {% for i in range(1,9) %}<option>{{ i }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Weekly Study Hours</label>
+              <input type="number" name="weekly_hours" class="form-control" value="10" min="1" max="80">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">College / University</label>
+              <input type="text" name="college" class="form-control" placeholder="Your institution name">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Career Goal <span class="text-danger">*</span></label>
+              <input type="text" name="career_goal" class="form-control" placeholder="e.g. ML Engineer, Full Stack Dev" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Preferred Domain <span class="text-danger">*</span></label>
+              <select name="preferred_domain" class="form-select" required>
+                <option value="">Select your domain...</option>
+                {% for d in ['Artificial Intelligence & Machine Learning','Data Science & Analytics','Full Stack Web Development','Cloud Computing & DevOps','Cybersecurity','Mobile App Development','Blockchain & Web3','Embedded Systems & IoT','Game Development','UI/UX Design'] %}
+                <option>{{ d }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Learning Style</label>
+              <select name="learning_style" class="form-select">
+                <option value="visual">Visual (diagrams, charts)</option>
+                <option value="auditory">Auditory (videos, podcasts)</option>
+                <option value="reading">Reading (docs, articles)</option>
+                <option value="kinesthetic">Kinesthetic (hands-on projects)</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Current Skills</label>
+              <input type="text" name="current_skills" class="form-control" placeholder="Python, HTML, SQL (comma-separated)">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Tell us about yourself</label>
+              <textarea name="bio" class="form-control" rows="3" placeholder="Your background, interests, and what you hope to achieve..."></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">
+            <i class="bi bi-arrow-right-circle me-2"></i>Continue to Skill Assessment
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

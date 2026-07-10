@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Resources Admin{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold"><i class="bi bi-collection me-2 text-accent"></i>Resource Management</h4>
+    <a href="{{ url_for('admin.add_resource') }}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Add Resource
+    </a>
+  </div>
+  <div class="glass-card p-4">
+    <div class="table-responsive">
+      <table class="table table-hover lm-table">
+        <thead>
+          <tr><th>Title</th><th>Platform</th><th>Domain</th><th>Level</th><th>Free</th><th>Rating</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for r in resources %}
+          <tr>
+            <td class="fw-semibold small">{{ r.title[:50] }}</td>
+            <td><span class="badge bg-primary-soft text-primary">{{ r.platform }}</span></td>
+            <td class="text-muted small">{{ (r.domain or '—')[:25] }}</td>
+            <td><span class="badge bg-{{ 'success' if r.level == 'Beginner' else 'warning' if r.level == 'Intermediate' else 'danger' }}">{{ r.level }}</span></td>
+            <td>{% if r.is_free %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %}</td>
+            <td>{{ r.rating or '—' }}</td>
+            <td>
+              <button class="btn btn-xs btn-outline-danger" onclick="deleteResource({{ r.id }}, this)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+async function deleteResource(id, btn) {
+  if (!confirm('Delete this resource?')) return;
+  const res = await fetch(`/admin/resources/${id}/delete`, { method: 'POST' });
+  const data = await res.json();
+  if (data.success) btn.closest('tr').remove();
+}
+</script>
+{% endblock %}

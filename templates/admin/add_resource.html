@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Add Resource{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="page-header mb-4">
+    <h4 class="fw-bold mb-1"><i class="bi bi-plus-circle me-2 text-accent"></i>Add Learning Resource</h4>
+  </div>
+  <div class="glass-card p-4 add-resource-card">
+    <form method="POST" action="{{ url_for('admin.add_resource') }}">
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label fw-semibold">Resource Title <span class="text-danger">*</span></label>
+          <input type="text" name="title" class="form-control" required placeholder="e.g. IBM AI Fundamentals — SkillsBuild">
+        </div>
+        <div class="col-md-8">
+          <label class="form-label fw-semibold">URL</label>
+          <input type="url" name="url" class="form-control" placeholder="https://...">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Platform</label>
+          <select name="platform" class="form-select">
+            {% for p in ['IBM SkillsBuild', 'Coursera', 'YouTube', 'GitHub', 'freeCodeCamp', 'Kaggle', 'Documentation', 'Other'] %}
+            <option>{{ p }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Resource Type</label>
+          <select name="resource_type" class="form-select">
+            {% for t in ['course', 'video', 'article', 'documentation', 'repository', 'book', 'tool'] %}
+            <option>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Domain</label>
+          <input type="text" name="domain" class="form-control" placeholder="e.g. Machine Learning">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Level</label>
+          <select name="level" class="form-select">
+            <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Description</label>
+          <textarea name="description" class="form-control" rows="3" placeholder="Brief description of what students will learn..."></textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Rating (0–5)</label>
+          <input type="number" name="rating" class="form-control" min="0" max="5" step="0.1" value="4.0">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Tags</label>
+          <input type="text" name="tags" class="form-control" placeholder="AI, Python, Free (comma-separated)">
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" name="is_free" id="isFree" checked>
+            <label class="form-check-label" for="isFree">Free Resource</label>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex gap-3 mt-4">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-2"></i>Add Resource
+        </button>
+        <a href="{{ url_for('admin.resources') }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

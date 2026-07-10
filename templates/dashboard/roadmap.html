@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Learning Roadmap{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h4 class="fw-bold mb-1"><i class="bi bi-map me-2 text-accent"></i>Learning Roadmap</h4>
+      <p class="text-muted mb-0">Your personalised {{ roadmap.duration_weeks if roadmap else '12' }}-week learning plan</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" onclick="generateRoadmap()">
+        <i class="bi bi-magic me-2"></i>{% if roadmap %}Regenerate{% else %}Generate{% endif %} Roadmap
+      </button>
+    </div>
+  </div>
+
+  {% if not roadmap %}
+  <div class="glass-card p-5 text-center">
+    <i class="bi bi-map fs-1 text-muted d-block mb-3"></i>
+    <h5 class="fw-bold mb-2">No Roadmap Yet</h5>
+    <p class="text-muted mb-4">Complete your skill assessment first, then generate your personalised roadmap.</p>
+    <div class="d-flex gap-3 justify-content-center">
+      <a href="{{ url_for('dashboard.skill_assessment') }}" class="btn btn-outline-primary">
+        <i class="bi bi-clipboard-check me-2"></i>Take Assessment
+      </a>
+      <button class="btn btn-primary" onclick="generateRoadmap()">
+        <i class="bi bi-magic me-2"></i>Generate Roadmap
+      </button>
+    </div>
+  </div>
+  {% else %}
+  <!-- Roadmap Header -->
+  <div class="glass-card p-4 mb-4 lm-ai-banner">
+    <div class="row align-items-center g-3">
+      <div class="col-md-6">
+        <h5 class="fw-bold mb-1">{{ roadmap_data.title if roadmap_data else roadmap.domain + ' Roadmap' }}</h5>
+        <p class="text-muted mb-0">{{ roadmap_data.summary if roadmap_data else 'Your personalised learning path' }}</p>
+      </div>
+      <div class="col-md-6">
+        <div class="d-flex gap-4 justify-content-md-end">
+          <div class="text-center">
+            <div class="fw-bold text-accent fs-4">{{ roadmap.duration_weeks }}</div>
+            <div class="text-muted small">Weeks</div>
+          </div>
+          <div class="text-center">
+            <div class="fw-bold text-success fs-4">{{ (roadmap_data.weeks|length) if roadmap_data else 0 }}</div>
+            <div class="text-muted small">Modules</div>
+          </div>
+          <div class="text-center">
+            <span class="level-badge level-{{ roadmap.level|lower }}">{{ roadmap.level }}</span>
+            <div class="text-muted small">Level</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  {% if roadmap_data and roadmap_data.weeks %}
+  <div class="roadmap-timeline">
+    {% for week in roadmap_data.weeks %}
+    <div class="timeline-item {% if loop.index0 % 2 == 0 %}timeline-left{% else %}timeline-right{% endif %}">
+      <div class="timeline-dot">{{ week.week }}</div>
+      <div class="timeline-card glass-card p-4">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="badge bg-primary-soft text-primary">Week {{ week.week }}</span>
+          <span class="text-muted small"><i class="bi bi-clock"></i> {{ week.hours_required }}h</span>
+        </div>
+        <h6 class="fw-bold mb-2">{{ week.theme }}</h6>
+        <div class="mb-3">
+          {% for topic in week.topics %}
+          <span class="topic-tag">{{ topic }}</span>
+          {% endfor %}
+        </div>
+        {% if week.project %}
+        <div class="project-hint p-2 rounded-2 mb-2">
+          <small><i class="bi bi-code-slash text-accent"></i> <strong>Project:</strong> {{ week.project }}</small>
+        </div>
+        {% endif %}
+        {% if week.milestone %}
+        <div class="milestone-hint p-2 rounded-2">
+          <small><i class="bi bi-trophy text-warning"></i> <strong>Milestone:</strong> {{ week.milestone }}</small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <!-- Generate Roadmap Modal -->
+  <div class="modal fade" id="roadmapModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content glass-card">
+        <div class="modal-header border-0">
+          <h5 class="modal-title"><i class="bi bi-magic me-2 text-accent"></i>Generate Learning Roadmap</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="roadmapModalBody">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Domain</label>
+            <input type="text" id="rmDomain" class="form-control"
+              value="{{ current_user.preferred_domain or '' }}" placeholder="e.g. Machine Learning">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Duration (weeks)</label>
+            <select id="rmDuration" class="form-select">
+              <option value="8">8 weeks</option>
+              <option value="12" selected>12 weeks</option>
+              <option value="16">16 weeks</option>
+              <option value="24">24 weeks</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" onclick="confirmGenerateRoadmap()">
+            <i class="bi bi-magic me-2"></i>Generate with AI
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="generatingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content glass-card text-center p-4">
+        <div class="spinner-border text-primary mx-auto mb-3"></div>
+        <p class="fw-bold mb-1">Generating Your Roadmap</p>
+        <p class="text-muted small">IBM watsonx.ai Granite is crafting your personalised learning path...</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function generateRoadmap() {
+  new bootstrap.Modal(document.getElementById('roadmapModal')).show();
+}
+
+async function confirmGenerateRoadmap() {
+  const domain   = document.getElementById('rmDomain').value;
+  const duration = document.getElementById('rmDuration').value;
+  bootstrap.Modal.getInstance(document.getElementById('roadmapModal')).hide();
+  new bootstrap.Modal(document.getElementById('generatingModal')).show();
+
+  try {
+    const res = await fetch('/api/agents/roadmap/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain, duration_weeks: parseInt(duration) })
+    });
+    const data = await res.json();
+    bootstrap.Modal.getInstance(document.getElementById('generatingModal')).hide();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert('Error: ' + data.error);
+    }
+  } catch(e) {
+    alert('Failed to generate roadmap. Please try again.');
+  }
+}
+</script>
+{% endblock %}

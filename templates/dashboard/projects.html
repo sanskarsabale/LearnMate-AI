@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Projects{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h4 class="fw-bold mb-1"><i class="bi bi-code-slash me-2 text-accent"></i>Recommended Projects</h4>
+      <p class="text-muted mb-0">Build your portfolio with AI-curated projects aligned to your career goals</p>
+    </div>
+    <button class="btn btn-primary" onclick="loadProjects()">
+      <i class="bi bi-magic me-2"></i>{% if total > 0 %}Refresh{% else %}Get{% endif %} Projects
+    </button>
+  </div>
+
+  {% if total == 0 %}
+  <div class="glass-card p-5 text-center">
+    <i class="bi bi-code-slash fs-1 text-muted d-block mb-3"></i>
+    <h5 class="fw-bold">No Projects Yet</h5>
+    <p class="text-muted mb-4">Let AI suggest personalised projects matching your skills and career goals.</p>
+    <button class="btn btn-primary" onclick="loadProjects()">
+      <i class="bi bi-magic me-2"></i>Get Personalised Projects
+    </button>
+  </div>
+  {% else %}
+
+  {% for level_name, level_projects, color in [('Beginner', beginner, 'success'), ('Intermediate', intermediate, 'warning'), ('Advanced', advanced, 'danger')] %}
+  {% if level_projects %}
+  <div class="mb-5">
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <h5 class="fw-bold mb-0">
+        <span class="badge bg-{{ color }} me-2">{{ level_name }}</span>
+        Projects
+      </h5>
+      <div class="flex-grow-1" style="height:1px;background:var(--border-color)"></div>
+    </div>
+    <div class="row g-4">
+      {% for project in level_projects %}
+      <div class="col-md-6 col-lg-4">
+        <div class="project-card glass-card h-100 p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-{{ color }}">{{ project.difficulty }}</span>
+            {% if project.is_completed %}
+            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Done</span>
+            {% endif %}
+          </div>
+          <h6 class="fw-bold mb-2">{{ project.title }}</h6>
+          <p class="text-muted small mb-3">{{ project.description[:120] if project.description else '' }}...</p>
+          <div class="mb-3">
+            {% if project.tech_stack %}
+              {% for tech in project.tech_stack.split(',')[:4] %}
+              <span class="tech-tag">{{ tech.strip() }}</span>
+              {% endfor %}
+            {% endif %}
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-3 text-muted small">
+            <i class="bi bi-clock"></i> ~{{ project.estimated_hours or '?' }} hours
+          </div>
+          <div class="d-flex gap-2 mt-auto">
+            {% if not project.is_completed %}
+            <button class="btn btn-sm btn-success flex-grow-1" onclick="markDone({{ project.id }}, this)">
+              <i class="bi bi-check-lg me-1"></i>Mark Done
+            </button>
+            {% endif %}
+            {% if project.github_template %}
+            <a href="{{ project.github_template }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-github"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+</div>
+
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content glass-card text-center p-4">
+      <div class="spinner-border text-primary mx-auto mb-3"></div>
+      <p class="fw-bold mb-1">Generating Projects</p>
+      <p class="text-muted small">IBM AI is curating projects for your profile...</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadProjects() {
+  new bootstrap.Modal(document.getElementById('loadingModal')).show();
+  try {
+    const res = await fetch('/api/agents/projects/recommend', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    bootstrap.Modal.getInstance(document.getElementById('loadingModal')).hide();
+    if (data.success) window.location.reload();
+    else alert('Error: ' + data.error);
+  } catch(e) { alert('Failed. Please try again.'); }
+}
+
+async function markDone(projectId, btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+  const res = await fetch(`/projects/${projectId}/complete`, { method: 'POST' });
+  const data = await res.json();
+  if (data.success) { btn.closest('.project-card').querySelector('.d-flex.justify-content-between')
+    .insertAdjacentHTML('beforeend', '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Done</span>');
+    btn.remove(); }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Student Details{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <div class="mb-4">
+    <a href="{{ url_for('admin.students') }}" class="btn btn-sm btn-outline-secondary mb-3">
+      <i class="bi bi-arrow-left me-1"></i> Back to Students
+    </a>
+    <div class="d-flex align-items-center gap-3">
+      <div class="profile-avatar" style="width:60px;height:60px;font-size:1.5rem">{{ student.name[0].upper() }}</div>
+      <div>
+        <h4 class="fw-bold mb-0">{{ student.name }}</h4>
+        <span class="text-muted">{{ student.email }}</span>
+        {% if student.is_admin %}<span class="badge bg-danger ms-2">Admin</span>{% endif %}
+        <span class="badge bg-{{ 'success' if student.is_active else 'secondary' }} ms-1">
+          {{ 'Active' if student.is_active else 'Inactive' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Profile Info -->
+    <div class="col-md-4">
+      <div class="glass-card p-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-person me-2 text-accent"></i>Profile</h6>
+        {% set fields = [
+          ('Branch', student.branch),
+          ('Semester', student.semester),
+          ('College', student.college),
+          ('Career Goal', student.career_goal),
+          ('Domain', student.preferred_domain),
+          ('Learning Style', student.learning_style),
+          ('Weekly Hours', (student.weekly_hours|string + 'h') if student.weekly_hours else None),
+          ('Member Since', student.created_at.strftime('%d %b %Y') if student.created_at else None),
+        ] %}
+        {% for label, value in fields %}
+        <div class="d-flex justify-content-between mb-2 small">
+          <span class="text-muted">{{ label }}</span>
+          <span class="fw-semibold text-end" style="max-width:60%">{{ value or '—' }}</span>
+        </div>
+        {% endfor %}
+        {% if student.current_skills %}
+        <div class="mt-3">
+          <div class="text-muted small mb-2">Skills</div>
+          <div class="d-flex flex-wrap gap-1">
+            {% for skill in student.current_skills.split(',')[:8] %}
+            <span class="skill-tag">{{ skill.strip() }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Assessments -->
+    <div class="col-md-8">
+      <div class="glass-card p-4 mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-clipboard-check me-2 text-accent"></i>Assessments ({{ assessments|length }})</h6>
+        {% if assessments %}
+        <div class="table-responsive">
+          <table class="table table-sm lm-table">
+            <thead><tr><th>Domain</th><th>Level</th><th>Score</th><th>Date</th></tr></thead>
+            <tbody>
+              {% for a in assessments %}
+              <tr>
+                <td>{{ a.domain }}</td>
+                <td><span class="level-badge level-{{ a.level|lower }}">{{ a.level }}</span></td>
+                <td><strong>{{ a.score|int }}%</strong></td>
+                <td class="text-muted small">{{ a.created_at.strftime('%d %b %Y') if a.created_at else '—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}<p class="text-muted small">No assessments yet.</p>{% endif %}
+      </div>
+
+      <!-- Progress -->
+      <div class="glass-card p-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-graph-up me-2 text-accent"></i>Progress ({{ progress|length }} entries)</h6>
+        {% if progress %}
+        <div class="table-responsive">
+          <table class="table table-sm lm-table">
+            <thead><tr><th>Week</th><th>Completion</th><th>Hours</th><th>Date</th></tr></thead>
+            <tbody>
+              {% for p in progress %}
+              <tr>
+                <td>Week {{ p.week_number }}</td>
+                <td>{{ p.completion_pct or 0 }}%</td>
+                <td>{{ p.total_hours_spent or 0 }}h</td>
+                <td class="text-muted small">{{ p.logged_at.strftime('%d %b %Y') if p.logged_at else '—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}<p class="text-muted small">No progress logged yet.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

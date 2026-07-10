@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Create Account{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<div class="auth-container">
+  <div class="auth-card glass-card" style="max-width:520px">
+    <div class="auth-header text-center mb-4">
+      <div class="auth-logo"><i class="bi bi-cpu-fill"></i></div>
+      <h2 class="fw-bold mt-3">Join LearnMate AI</h2>
+      <p class="text-muted">Start your personalised learning journey today</p>
+    </div>
+    <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Full Name</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-person"></i></span>
+          <input type="text" name="name" class="form-control" placeholder="Your full name" required autofocus>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Email Address</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input type="email" name="email" class="form-control" placeholder="you@college.edu" required>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Password</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input type="password" name="password" id="pw1" class="form-control" placeholder="Min. 8 characters" required>
+          <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('pw1',this)">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Confirm Password</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+          <input type="password" name="confirm_password" id="pw2" class="form-control" placeholder="Re-enter password" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100 btn-lg py-2">
+        <i class="bi bi-rocket-takeoff me-2"></i>Create My Account
+      </button>
+    </form>
+    <hr class="my-4">
+    <p class="text-center text-muted mb-0">
+      Already have an account?
+      <a href="{{ url_for('auth.login') }}" class="text-accent fw-semibold">Sign in</a>
+    </p>
+    <p class="text-center mt-3">
+      <small class="text-muted"><i class="bi bi-shield-check text-success"></i> Free forever. No credit card required.</small>
+    </p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function togglePassword(id, btn) {
+  const input = document.getElementById(id);
+  const icon = btn.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text'; icon.classList.replace('bi-eye','bi-eye-slash');
+  } else {
+    input.type = 'password'; icon.classList.replace('bi-eye-slash','bi-eye');
+  }
+}
+</script>
+{% endblock %}
